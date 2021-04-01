@@ -1,0 +1,46 @@
+; === init
+; turn on interrupts on pin 1 and 2
+; Pin: 87654321
+;  6 = 00000110b
+	enable	6
+	MOV b2, 0	; for checking if a number has already been entered.
+
+main:
+	adc 	w0, 11	; read value from potentiometer. The value is
+; written to the higher byte of the given word
+	debug 	b1	; output said byte
+	JMP main
+
+pin1_interrupt:
+; saves a number either on the first register or second register
+
+; if the first number does not exist, save the value of the potentiometer
+; to the first number by going to "save_first"
+	cmp b2, 0	
+	jz save_first
+
+	cmp b2, 1
+	jz save_second
+
+	RETI
+
+save_first:
+	mov w1, w0	; save the value of the potentiometer to b3
+
+; increments the value of b2 so that the program knows that the first number now exists
+	inc b2		
+	jmp main
+
+save_second:
+	mov w2, w0 	; save the value of the potentiometer to b4
+
+; sets the value of b2 back to 0 to reset the multiplier
+	mov b2, 0
+	jmp main
+
+pin2_interrupt:
+	mov w3, w1
+	mul w3, w2
+	debug w3
+	reti
+end
