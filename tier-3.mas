@@ -43,4 +43,18 @@ pin2_interrupt:
 	mul w3, w2
 	debug w3
 	reti
+
+; === interrupt table
+; the interrupt table starts at 0x100, each entry has 2 bytes:
+;   0x100 0x101 ... pin 0
+;   0x102 0x103 ... pin 1
+;   0x104 0x105 ... pin 2
+
+; ISR for pin 1
+	org	0x102
+	da	pin1_interrupt
+
+; ISR for pin 2
+	org	0x104
+	da	pin2_interrupt
 end
