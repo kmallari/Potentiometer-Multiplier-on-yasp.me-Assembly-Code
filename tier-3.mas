@@ -1,48 +1,57 @@
 ; === init
 ; turn on interrupts on pin 1 and 2
-; Pin: 87654321
-;  6 = 00000110b
-	enable	6
-	MOV b2, 0	; for checking if a number has already been entered.
+; Pin: 7 6 5 4 3 2 1 0
+;  6 = 0 0 0 0 0 1 1 0 b
+	ENABLE 6
+	MOV b2, 0	; for checking if a number has already been entered
+	MOV w9, 0x0080
+	MOV w10, 0x0081
+	MOV w11, 0x0082
+	MOV w12, 0x0083
 
 main:
-	adc 	w0, 11	; read value from potentiometer. The value is
-; written to the higher byte of the given word
-	debug 	b1	; output said byte
+	ADC	w4, 11	; read value from potentiometer (00 to ff) to lower byte of w4
+	DEBUG	b9	; output said byte
 	JMP main
 
-pin1_interrupt:
+pin1_interrupt:		; gray button
 ; saves a number either on the first register or second register
 
 ; if the first number does not exist, save the value of the potentiometer
 ; to the first number by going to "save_first"
-	cmp b2, 0	
-	jz save_first
+	CMP b2, 0	
+	JZ save_first
 
-	cmp b2, 1
-	jz save_second
+	CMP b2, 1
+	JZ save_second
 
 	RETI
 
 save_first:
-	mov w1, w0	; save the value of the potentiometer to b3
+	MOV w5, w4	; save the value of the potentiometer to w5
 
 ; increments the value of b2 so that the program knows that the first number now exists
-	inc b2		
-	jmp main
+	INC b2		
+	JMP main
 
 save_second:
-	mov w2, w0 	; save the value of the potentiometer to b4
+	MOV w6, w4 	; save the value of the potentiometer to w6
 
 ; sets the value of b2 back to 0 to reset the multiplier
-	mov b2, 0
-	jmp main
+	DEC b2
+	JMP main
 
-pin2_interrupt:
-	mov w3, w1
-	mul w3, w2
-	debug w3
-	reti
+pin2_interrupt:		; red button
+	MOV w8, w5
+	MUL w8, w6	; multiply the 2 factors
+	DEBUG w8
+
+	WRROM w9, b11	; first factor to addr 0x0080 of ROM
+	WRROM w10, b13	; second factor to addr 0x0081 of ROM
+	WRROM w11, b16	; high byte of product to 0x0082 of ROM
+	WRROM w12, b17	; low byte of product to 0x0083 of ROM
+
+	RETI
 
 ; === interrupt table
 ; the interrupt table starts at 0x100, each entry has 2 bytes:
@@ -51,10 +60,10 @@ pin2_interrupt:
 ;   0x104 0x105 ... pin 2
 
 ; ISR for pin 1
-	org	0x102
-	da	pin1_interrupt
+	ORG	0x102
+	DA	pin1_interrupt
 
 ; ISR for pin 2
-	org	0x104
-	da	pin2_interrupt
+	ORG	0x104
+	DA	pin2_interrupt
 end
